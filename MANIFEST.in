@@ -1,0 +1,3 @@
+recursive-include parrotjoy *
+include README.md
+include LICENSE.txt
