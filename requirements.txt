@@ -1,1 +1,4 @@
-pygame
+pygame==2.0.0.dev1
+numpy
+aubio
+opencv-python
