@@ -12,6 +12,12 @@ python3 -m venv venv
 . ./venv/bin/activate
 pip install -r requirements.dev.txt
 python run_game.py
+
+# record sounds and play them back with the joypad
+python parrotjoy/looper.py
+
+# make noises and watch circles appear.
+parrotjoy/videosynth.py
 ```
 
 
