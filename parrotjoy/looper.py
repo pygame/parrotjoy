@@ -378,8 +378,8 @@ def main():
         # pg.mixer.pre_init(44100, 32, 2, 512)
 
     pg.init()
-    # screen = pg.display.set_mode((1024, 768))
-    screen = pg.display.set_mode((1920, 1080))
+    screen = pg.display.set_mode((1024, 768))
+    # screen = pg.display.set_mode((1920, 1080))
 
 
     # video_thread = VideoThread(1, 1920, 1080)
@@ -462,8 +462,8 @@ def main():
                 screen.blit(background, (0, 0))
                 allsprites.clear(screen, background)
                 video_thread.stop()
-                video_thread = VideoThread(1, 1920, 1080)
-                # video_thread = VideoThread(1, 640, 480)
+                # video_thread = VideoThread(1, 1920, 1080)
+                video_thread = VideoThread(1, 640, 480)
                 video_thread.daemon = True
                 video_thread.start()
 
