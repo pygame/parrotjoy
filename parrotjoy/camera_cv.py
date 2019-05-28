@@ -3,16 +3,23 @@
 https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html#videocapture
 """
 import pygame
+import pygame.camera
 from pygame.locals import *
-import cv2
 import numpy as np
 import sys
 from threading import Thread
 from queue import Queue
 
+USE_CV2 = False
+
+try:
+    import cv2
+    USE_CV2 = True
+except:
+    pass
 
 
-class VideoThread(Thread):
+class VideoThreadCV2(Thread):
     """ Camera Surface into queue.
     """
     def __init__(self, what=1, width=640, height=480):
@@ -46,6 +53,61 @@ class VideoThread(Thread):
             except KeyboardInterrupt:
                 break
         self.camera = None
+
+
+class VideoThreadPygame(Thread):
+    """ Camera Surface into queue.
+    """
+    def __init__(self, what=1, width=640, height=480):
+        Thread.__init__(self)
+        self.width = width
+        self.height = height
+        self.size = (width, height)
+
+        self.going = True
+        self.queue = Queue()
+
+        try:
+            pygame.camera.init()
+        except:
+            self.going = False
+            return
+
+        clist = pygame.camera.list_cameras()
+        if clist:
+            self.camera = pygame.camera.Camera(clist[0], self.size, "RGB")
+            self.going = True
+        else:
+            self.camera = None
+            self.going = False
+
+        if self.camera is not None:
+            self.camera.start()
+
+        self.snapshot = pygame.surface.Surface(self.size, 0, pygame.display.get_surface())
+
+
+    def stop(self):
+        self.going = False
+
+    def run(self):
+        while self.going:
+            try:
+                # self.snapshot = self.camera.get_image(self.snapshot)
+                snapshot = self.camera.get_image()
+                if snapshot is not None:
+                    self.queue.put(surface)
+            except KeyboardInterrupt:
+                break
+        self.camera = None
+
+if USE_CV2:
+    VideoThread = VideoThreadCV2
+else:
+    VideoThread = VideoThreadPygame
+
+
+
 
 def main():
     pygame.init()
