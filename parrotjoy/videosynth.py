@@ -87,8 +87,11 @@ def make_pygame_sound(abuffer=None, array=None):
     else:
         float32_data = array
     stereo = np.vstack([float32_data, float32_data]).T
+    #print(stereo)
     reshaped_float32_data = float32_data.reshape(-1, 1)
     stereo = np.hstack((reshaped_float32_data, reshaped_float32_data))
+    print (stereo.shape)
+    print (pg.mixer.get_init())
     asound = pg.mixer.Sound(array=stereo)
     return asound
 
@@ -238,6 +241,7 @@ class AudioRecord:
 
     def on_data(self, audiodevice, audiobuffer):
         self.audio_queue.put(bytes(audiobuffer))
+        #print(type(audiobuffer), len(audiobuffer))
         signal = np.frombuffer(audiobuffer, dtype=np.float32)
         # print(audiodevice)
         if self.onset(signal):
@@ -305,7 +309,9 @@ class AudioRecord:
 
 def main():
 
-    pg.mixer.pre_init(44100, 32, 2, 1024, devicename=DEVICENAME_OUTPUT)
+    #pg.mixer.pre_init(44100, 32, 2, 1024, devicename=DEVICENAME_OUTPUT)
+    pg.mixer.pre_init(44100, 32, 2, 1024, devicename=DEVICENAME_OUTPUT, allowedchanges=0)
+
     pg.init()
 
     running = True
