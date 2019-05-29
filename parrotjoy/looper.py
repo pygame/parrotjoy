@@ -78,13 +78,15 @@ class TrackRecorder:
             time.sleep(0.0001)
 
         self.tracks = [Track(self.bpm) for x in range(4)]
-        self.track = self.tracks[0]
+        self.track_idx = 0
+        self.track = self.tracks[self.track_idx]
 
         self.joys = Joy()
         self.joy_buttons = self.joys.joys[0]['buttons']
         self.playing = False
         """ True if we should play the sounds.
         """
+
 
     def play(self):
         print("TrackRecorder: play")
@@ -118,6 +120,7 @@ class TrackRecorder:
         if e.type == pg.JOYBUTTONDOWN and e.button in track_buttons:
             track_idx = track_buttons.index(e.button)
             track = self.tracks[track_idx]
+            self.track_idx = track_idx
             if self.joy_buttons[JOY_R1]:
                 track.start_new_next()
             elif self.joy_buttons[JOY_R2]:
@@ -154,26 +157,57 @@ class TrackRecorder:
         self.joys.events(events)
 
         for e in events:
-            # print(e)
+            # print("events", e)
             if e.type == pg.QUIT:
                 running = False
             if e.type == pg.KEYDOWN:
-                if e.unicode == 'z':
+                if e.key == pg.K_z:
                     self.audio_thread.audio_going = False
-                if e.unicode == 's':
+                if e.key == pg.K_s:
+                    print("self.track.start_new_next()")
                     self.track.start_new_next()
-                if e.unicode == 'S':
+
+                if e.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_SHIFT:
+                    print("self.track.add_to_next()")
                     self.track.add_to_next()
-                if e.unicode == 'p':
+                if e.key == pg.K_p:
                     self.track.play()
 
-                if e.unicode == 'f':
+                if e.key == pg.K_f:
+                    print("self.track.finish()")
                     self.track.finish()
                     # if track.sounds:
                     #     for sound in track.sounds[-5]:
                     #         sound.play()
+                if e.key == pg.K_w:
+                    print("self.track.trim_audio(start=-0.2)")
+                    self.track.trim_audio(start=-0.2)
+                if e.key == pg.K_e:
+                    print("self.track.trim_audio(start=0.2)")
+                    self.track.trim_audio(start=0.2)
+
+                if e.key == pg.K_r:
+                    print("self.track.trim_audio(end=0.2)")
+                    self.track.trim_audio(end=0.2)
+                if e.key == pg.K_t:
+                    print("self.track.trim_audio(end=-0.2)")
+                    self.track.trim_audio(end=-0.2)
 
             self.event_joy(e)
+
+            if e.type == pg.JOYAXISMOTION:
+                if e.axis == 0 and e.value < -0.01:
+                    # lpaddle left
+                    self.tracks[self.track_idx].trim_audio(start=-0.2)
+                elif e.axis == 0 and e.value >= 0.01:
+                    # lpaddle right
+                    self.tracks[self.track_idx].trim_audio(start=0.2)
+                elif e.axis == 2 and e.value < -0.01:
+                    #rpaddle left
+                    self.tracks[self.track_idx].trim_audio(end=0.2)
+                elif e.axis == 2 and e.value >= 0.01:
+                    #rpaddle right
+                    self.tracks[self.track_idx].trim_audio(end=-0.2)
 
             if e.type == pg.JOYBUTTONDOWN and e.button == JOY_SELECT:
                 self.stop()
@@ -260,6 +294,8 @@ class RecordingWave(pg.sprite.DirtySprite):
     def update(self):
         """
         """
+        # print("RecordingWave: self.track.recording, self.state, self.track.recording, self.track.add_to_mode")
+        # print(self.track.recording, self.state, self.track.recording, self.track.add_to_mode)
         if self.track.recording == 2 and (not self.track.add_to_mode) and self.state != 'recording':
             print('WAVE: recording')
             self.image.fill((0, 0, 0))
@@ -281,6 +317,12 @@ class RecordingWave(pg.sprite.DirtySprite):
             print('WAVE: erased')
             self.image.fill((0, 0, 0))
             self.dirty = 1
+        elif self.track.trimmed:
+            print('WAVE: trimmed')
+            if self.track.sounds and self.track.sounds[0]:
+                self.draw_wave()
+            self.dirty = 1
+            self.state = None
 
 
 class RecordingLight(pg.sprite.DirtySprite):
@@ -377,7 +419,8 @@ def main():
         # pg.mixer.pre_init(44100, 32, 2, 512, devicename=None)
         # pg.mixer.pre_init(44100, 32, 2, 512)
 
-    pg.init()
+    r = pg.init()
+    print(r)
     screen = pg.display.set_mode((1024, 768))
     # screen = pg.display.set_mode((1920, 1080))
 

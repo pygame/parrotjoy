@@ -89,6 +89,7 @@ def make_pygame_sound(abuffer=None, array=None):
     stereo = np.vstack([float32_data, float32_data]).T
     reshaped_float32_data = float32_data.reshape(-1, 1)
     stereo = np.hstack((reshaped_float32_data, reshaped_float32_data))
+    print(stereo.shape)
     asound = pg.mixer.Sound(array=stereo)
     return asound
 
@@ -113,6 +114,22 @@ def mix_audio(audio1, audio2):
     return newaudio
 
 
+def trim_audio(audio, start_trim=0, end_trim=0, rate=44100, channels=1):
+    """ return the audio with the start_trim, and end_trim removed.
+
+    :param audio: a numpy array of samples.
+    :param rate: samples per second.
+    :param start_trim: seconds from the start of the track to use.
+    :param end_trim: seconds from the end of the track to use.
+    """
+    if end_trim > 0:
+        return audio[int(rate * start_trim):-int(rate * end_trim)]
+    else:
+        return audio[int(rate * start_trim):]
+
+
+
+
 class Track:
 
     def __init__(self, bpm):
@@ -120,11 +137,28 @@ class Track:
         self.add_to_mode = False
         self.frames = []
         self.audios = []
+        self.audios_untrimmed = []
+
         self.sounds = []
         self.add_to_mode = False
         self.recording = False
+        """
+        recording
+            - False, not recording
+            - 1,     starting a new track
+            - 2,     adding to
+        """
+
+        self.start_trim = 0
+        """ seconds from the start of the track to use.
+        """
+        self.end_trim = 0
+        """ seconds from the end of the track to use.
+        """
+
         self.erased = False
         self.finished = False
+        self.trimmed = False
 
         self._start_new_next = False
         self._add_to_next = False
@@ -142,6 +176,7 @@ class Track:
         print("track: start_new")
         self.frames = []
         self.audios = []
+        self.audios_untrimmed = []
         self.sounds = []
         self.add_to_mode = False
         self.recording = 2
@@ -169,10 +204,46 @@ class Track:
         print("track: erase")
         self.frames = []
         self.audios = []
+        self.audios_untrimmed = []
         self.sounds = []
         self.add_to_mode = False
         self.recording = False
         self.erased = True
+        self.trimmed = False
+
+    def trim_audio(self, start=0, end=0):
+        self.start_trim += start
+        self.end_trim += end
+        if self.end_trim - 0.000001 < 0:
+            self.end_trim = 0
+        if self.end_trim > 2:
+            # TODO: if end_trim > sound_length
+            self.end_trim = 2
+
+
+        if self.start_trim - 0.000001 < 0:
+            self.start_trim = 0
+        if self.start_trim > 2:
+            # TODO: if start_trim > sound_length
+            self.start_trim = 2
+
+
+        print("trim_audio", start, end, self.start_trim, self.end_trim)
+        if len(self.audios_untrimmed):
+            frames = self.audios_untrimmed[0]
+        else:
+            frames = self.audios[0]
+
+        audio = np.frombuffer(frames, dtype=np.float32)
+        trimmed_audio = trim_audio(audio, self.start_trim, self.end_trim)
+        self.sounds = [
+            make_pygame_sound(array=trimmed_audio)
+        ]
+        if not len(self.audios_untrimmed):
+            self.audios_untrimmed = self.audios[:]
+
+        self.audios = [trimmed_audio.tobytes()]
+        self.trimmed = True
 
     def finish(self):
         print("track: finish")
@@ -216,6 +287,8 @@ class Track:
                     self.frames.append(audiobuffer)
         if self.erased:
             self.erased = False
+        if self.trimmed:
+            self.trimmed = False
         if self.finished:
             print("update: finished")
             self.finished = False
@@ -248,7 +321,7 @@ class AudioRecord:
         #pitch = int(round(pitch))
         if int(round(pitch)):
             confidence = self.pitch_o.get_confidence()
-            print("pitch, confidence", pitch, confidence, midi_to_ansi_note(pitch))
+            # print("pitch, confidence", pitch, confidence, midi_to_ansi_note(pitch))
 
     def start(self):
         FORMAT = AUDIO_F32
