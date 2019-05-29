@@ -7,6 +7,8 @@ For making music, and visuals.
 
 ## Get started.
 
+### Installation
+
 ```
 python3 -m venv venv
 . ./venv/bin/activate
@@ -19,6 +21,27 @@ python parrotjoy/looper.py
 # make noises and watch circles appear.
 parrotjoy/videosynth.py
 ```
+
+### Joypad controller instructions
+
+
+There are 4 audio tracks.
+The first two tracks
+
+Pressing the numbered buttons (1,2,3,4) in combination with `modifier` ones.
+
+- R1 ) track.start_new_next
+- R2 ) track.add_to_next
+- L1 ) track.erase
+
+If recording, track.finish()
+else:         track.play()
+
+
+
+
+
+
 
 
 ### Running tests.
