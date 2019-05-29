@@ -114,7 +114,8 @@ def draw_wave(surf,
     if background_color is not None:
         surf.fill(background_color)
     width, height = surf.get_size()
-
+    if samples.shape[0] == 0:
+        return
     if 1:
         newsamples = resize_samples(samples, width)
         if hasattr(samples, 'typecode'):
@@ -124,7 +125,8 @@ def draw_wave(surf,
             samples = list(newsamples)
 
     points = tuple(scale_samples_to_surf(width, height, samples))
-    pg.draw.lines(surf, wave_color, False, points)
+    if points:
+        pg.draw.lines(surf, wave_color, False, points)
 
 
 
