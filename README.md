@@ -38,9 +38,31 @@ If recording, track.finish()
 else:         track.play()
 
 
+#### Trimming with analog joy sticks.
+
+The analog controllers can be used to trim a track.
+This is useful if you record too much sound, or you want to line it up with other parts.
+
+- Left stick trims the start of the track. Tap the left stick to the right to have less of the sound from the beginning.
+
+- Right stick is for trimming the end of the track.
 
 
+### Keyboard control.
 
+- `s`, start recording a new track
+- `S`, record over the top of an existing track
+- `f`, finish recording track.
+
+- `p`, play
+
+- `w`, trim the START of the sound. Get MORE sound on LEFT of sound.
+- `e`, trim the START of the sound. Get LESS sound on LEFT of sound.
+
+- `r`, trim the END of the sound. Get LESS sound on RIGHT of sound.
+- `t`, trim the END of the sound. Get MORE sound on RIGHT of sound.
+
+- `space`, adjust the BPM timer. Tap it in time until the BPM is as you like.
 
 
 
