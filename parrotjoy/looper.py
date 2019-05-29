@@ -184,16 +184,20 @@ class TrackRecorder:
                 if e.key == pg.K_w:
                     print("self.track.trim_audio(start=-0.2)")
                     self.track.trim_audio(start=-0.2)
+                    self.start()
                 if e.key == pg.K_e:
                     print("self.track.trim_audio(start=0.2)")
                     self.track.trim_audio(start=0.2)
+                    self.start()
 
                 if e.key == pg.K_r:
                     print("self.track.trim_audio(end=0.2)")
                     self.track.trim_audio(end=0.2)
+                    self.start()
                 if e.key == pg.K_t:
                     print("self.track.trim_audio(end=-0.2)")
                     self.track.trim_audio(end=-0.2)
+                    self.start()
 
             self.event_joy(e)
 
@@ -201,15 +205,20 @@ class TrackRecorder:
                 if e.axis == 0 and e.value < -0.01:
                     # lpaddle left
                     self.tracks[self.track_idx].trim_audio(start=-0.2)
+                    self.start()
                 elif e.axis == 0 and e.value >= 0.01:
                     # lpaddle right
                     self.tracks[self.track_idx].trim_audio(start=0.2)
+                    self.start()
                 elif e.axis == 2 and e.value < -0.01:
                     #rpaddle left
                     self.tracks[self.track_idx].trim_audio(end=0.2)
+                    self.start()
                 elif e.axis == 2 and e.value >= 0.01:
                     #rpaddle right
                     self.tracks[self.track_idx].trim_audio(end=-0.2)
+                    self.start()
+
 
             if e.type == pg.JOYBUTTONDOWN and e.button == JOY_SELECT:
                 self.stop()
