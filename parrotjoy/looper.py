@@ -20,8 +20,10 @@ from camera_cv import VideoThread
 
 DEVICENAME_INPUT = None
 DEVICENAME_OUTPUT = None
-# DEVICENAME_INPUT = b'Scarlett 2i4 USB'
-# DEVICENAME_OUTPUT = b'Scarlett 2i4 USB'
+#DEVICENAME_INPUT = b'Scarlett 2i4 USB'
+#DEVICENAME_OUTPUT = b'Scarlett 2i4 USB'
+#DEVICENAME_INPUT = b'Scarlett 2i4 USB, USB Audio'
+#DEVICENAME_OUTPUT = b'Scarlett 2i4 USB, USB Audio'
 
 
 
@@ -414,7 +416,7 @@ class Gif:
 def main():
 
     if pg.get_sdl_version()[0] == 2:
-        pg.mixer.pre_init(44100, 32, 2, 512, devicename=DEVICENAME_OUTPUT)
+        pg.mixer.pre_init(44100, 32, 2, 512, devicename=DEVICENAME_OUTPUT, allowedchanges=0)
         # pg.mixer.pre_init(44100, 32, 2, 512, devicename='Scarlett 2i4 USB')
         # pg.mixer.pre_init(44100, 32, 2, 512, devicename=None)
         # pg.mixer.pre_init(44100, 32, 2, 512)
