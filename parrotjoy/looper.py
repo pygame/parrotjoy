@@ -13,9 +13,10 @@ import pygame as pg
 pygame = pg
 
 from metronome import Bpm, BpmCounter, BpmLight, BpmLine
-from videosynth import AudioRecord, Track, mix_audio, make_pygame_sound, DEVICENAME_OUTPUT
+from videosynth import AudioRecord, DEVICENAME_OUTPUT
 from draw_sound import draw_wave
 from camera_cv import VideoThread
+from tracks import Track
 
 
 DEVICENAME_INPUT = None
@@ -68,7 +69,7 @@ class TrackRecorder:
         # self.audio_thread.daemon = True
         # self.audio_thread.start()
 
-        self.audio_thread = AudioRecord()
+        self.audio_thread = AudioRecord(inputdevice=DEVICENAME_INPUT)
         self.audio_thread.start()
 
 
