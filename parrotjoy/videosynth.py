@@ -13,7 +13,7 @@ import pygame as pg
 pygame = pg
 
 from tracks import Track
-from audiorecord import AudioRecord
+from audiorecord import AudioRecord, PITCHES, ONSETS, AUDIOS
 
 
 DEVICENAME_INPUT = None
@@ -63,14 +63,30 @@ def main():
 
     while running:
 
-        while not audio_thread.audio_queue.empty():
-            # print(time.time() - time_start)
-            track.update(audio_thread.audio_queue.get())
+        # while not audio_thread.audio_queue.empty():
+        #     # print(time.time() - time_start)
+        #     track.update(audio_thread.audio_queue.get())
+        audio_thread.update()
 
         for event in pg.event.get():
-            print(event)
+            # print(event)
             if event.type == pg.QUIT:
                 running = False
+            elif event.type == PITCHES:
+                pass
+            elif event.type == ONSETS:
+                for onset in event.onsets:
+                    visuals.append(Visual(
+                        random.randint(0, screen_width),
+                        random.randint(0, screen_height),
+                        random.choice(colors),
+                        size=300
+                    ))
+
+            elif event.type == AUDIOS:
+                for audio in event.audios:
+                    track.update(audio)
+
             if event.type == pg.KEYDOWN:
                 if event.unicode == 'q':
                     running = False
@@ -89,14 +105,6 @@ def main():
                     #     for sound in track.sounds[-5]:
                     #         sound.play()
 
-        while not audio_thread.oneset_queue.empty():
-            audio_thread.oneset_queue.get()
-            visuals.append(Visual(
-                random.randint(0, screen_width),
-                random.randint(0, screen_height),
-                random.choice(colors),
-                size=300
-            ))
 
         screen.fill((0, 0, 0))
         new_visuals = []
