@@ -279,6 +279,10 @@ class Track:
         for sound in self.sounds:
             sound.play()
 
+    def stop(self):
+        for sound in self.sounds:
+            sound.stop()
+
     def update(self, audiobuffer):
         # print(f'id: {id(audiobuffer)}')
         if self.recording:

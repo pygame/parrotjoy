@@ -56,6 +56,8 @@ JOY_R2 = 7
 JOY_L1 = 4
 JOY_L2 = 6
 
+TRIM_AMOUNT = 0.1
+
 
 class TrackRecorder:
     """ For recording, and playing back different tracks.
@@ -139,6 +141,12 @@ class TrackRecorder:
                 track.play()
 
 
+    def trim_audio(self, start=0, end=0):
+        track = self.tracks[self.track_idx]
+        track.trim_audio(start=start, end=end)
+        track.stop()
+        track.play()
+
 
     def events(self, events):
 
@@ -182,42 +190,30 @@ class TrackRecorder:
                     #     for sound in track.sounds[-5]:
                     #         sound.play()
                 if e.key == pg.K_w:
-                    print("self.track.trim_audio(start=-0.2)")
-                    self.track.trim_audio(start=-0.2)
-                    self.start()
+                    self.trim_audio(start=-TRIM_AMOUNT)
                 if e.key == pg.K_e:
-                    print("self.track.trim_audio(start=0.2)")
-                    self.track.trim_audio(start=0.2)
-                    self.start()
+                    self.trim_audio(start=TRIM_AMOUNT)
 
                 if e.key == pg.K_r:
-                    print("self.track.trim_audio(end=0.2)")
-                    self.track.trim_audio(end=0.2)
-                    self.start()
+                    self.trim_audio(end=TRIM_AMOUNT)
                 if e.key == pg.K_t:
-                    print("self.track.trim_audio(end=-0.2)")
-                    self.track.trim_audio(end=-0.2)
-                    self.start()
+                    self.trim_audio(end=-TRIM_AMOUNT)
 
             self.event_joy(e)
 
             if e.type == pg.JOYAXISMOTION:
                 if e.axis == 0 and e.value < -0.01:
                     # lpaddle left
-                    self.tracks[self.track_idx].trim_audio(start=-0.2)
-                    self.start()
+                    self.trim_audio(start=-TRIM_AMOUNT)
                 elif e.axis == 0 and e.value >= 0.01:
                     # lpaddle right
-                    self.tracks[self.track_idx].trim_audio(start=0.2)
-                    self.start()
+                    self.trim_audio(start=TRIM_AMOUNT)
                 elif e.axis == 2 and e.value < -0.01:
                     #rpaddle left
-                    self.tracks[self.track_idx].trim_audio(end=0.2)
-                    self.start()
+                    self.trim_audio(end=TRIM_AMOUNT)
                 elif e.axis == 2 and e.value >= 0.01:
                     #rpaddle right
-                    self.tracks[self.track_idx].trim_audio(end=-0.2)
-                    self.start()
+                    self.trim_audio(end=-TRIM_AMOUNT)
 
 
             if e.type == pg.JOYBUTTONDOWN and e.button == JOY_SELECT:
@@ -233,7 +229,8 @@ class TrackRecorder:
                 # self.joys[0]['buttons'][e.button] = 0
 
         # if the first track was just finished, we see how big it is.
-        if self.tracks[0].finished or (self.tracks[1].finished):
+        if ((self.tracks[0].finished or self.tracks[0].trimmed) or
+            (self.tracks[1].finished or self.tracks[1].trimmed)):
             # get the longest of the two looping tracks.
             sound_length1 = 0
             sound_length2 = 0
