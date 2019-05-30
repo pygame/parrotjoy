@@ -19,7 +19,7 @@ python run_game.py
 python parrotjoy/looper.py
 
 # make noises and watch circles appear.
-parrotjoy/videosynth.py
+python parrotjoy/videosynth.py
 ```
 
 ### Joypad controller instructions
@@ -103,5 +103,17 @@ ls build/*.dmg
 
 #### Code license
 
-License for code will be the same as the pygame license (LGPL, but you can keep your parts of course!)
+License for code will be the same as the pygame license (LGPL).
+
+Check the licenses for the dependencies.
+
+## parrotjoy uses
+
+many parts made by others...
+
+- [pygame](https://pygame.org/)
+- [python](https://python.org/)
+- [aubio](https://aubio.org/)
+- [libsdl](https://libsdl.org/)
+- ... numpy, opencv-python, pytest, cxfreeze
 
