@@ -13,7 +13,7 @@ import pygame as pg
 pygame = pg
 
 from metronome import Bpm, BpmCounter, BpmLight, BpmLine
-from videosynth import AudioRecord, DEVICENAME_OUTPUT
+from videosynth import AudioRecord, DEVICENAME_OUTPUT, AUDIOS, ONSETS, PITCHES
 from draw_sound import draw_wave
 from camera_cv import VideoThread
 from tracks import Track
@@ -158,34 +158,34 @@ class TrackRecorder:
         for track in self.tracks:
             track.update(None)
 
-        while not self.audio_thread.audio_queue.empty():
-            # print('-----audio from queue')
-            # print(time.time() - time_start)
-            audio = self.audio_thread.audio_queue.get()
-            for track in self.tracks:
-                track.update(audio)
-
+        self.audio_thread.update()
         self.joys.events(events)
 
         for e in events:
             # print("events", e)
             if e.type == pg.QUIT:
                 running = False
+            elif e.type == PITCHES:
+                for pitch in e.pitches:
+                    pass
+            elif e.type == ONSETS:
+                for onset in e.onsets:
+                    pass
+            elif e.type == AUDIOS:
+                for audio in e.audios:
+                    for track in self.tracks:
+                        track.update(audio)
+
             if e.type == pg.KEYDOWN:
                 if e.key == pg.K_z:
                     self.audio_thread.audio_going = False
                 if e.key == pg.K_s:
-                    print("self.track.start_new_next()")
                     self.track.start_new_next()
-
                 if e.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_SHIFT:
-                    print("self.track.add_to_next()")
                     self.track.add_to_next()
                 if e.key == pg.K_p:
                     self.track.play()
-
                 if e.key == pg.K_f:
-                    print("self.track.finish()")
                     self.track.finish()
                     # if track.sounds:
                     #     for sound in track.sounds[-5]:
@@ -194,7 +194,6 @@ class TrackRecorder:
                     self.trim_audio(start=-TRIM_AMOUNT)
                 if e.key == pg.K_e:
                     self.trim_audio(start=TRIM_AMOUNT)
-
                 if e.key == pg.K_r:
                     self.trim_audio(end=TRIM_AMOUNT)
                 if e.key == pg.K_t:
@@ -246,14 +245,6 @@ class TrackRecorder:
             bpm = 60 / space_between_beats
             self.bpm.init(bpm, space_between_beats)
             self.start()
-
-        while not self.audio_thread.oneset_queue.empty():
-            self.audio_thread.oneset_queue.get()
-
-
-
-
-
 
 
 class RecordingWave(pg.sprite.DirtySprite):
@@ -492,7 +483,6 @@ def main():
 
         events = pg.event.get()
         for e in events:
-            print(e)
             if e.type == pg.QUIT or e.type == pg.KEYDOWN and e.key in [pg.K_ESCAPE, pg.K_q]:
                 going = False
 
