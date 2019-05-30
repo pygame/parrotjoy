@@ -15,6 +15,9 @@ pygame = pg
 
 from pygame._sdl2 import *
 
+AUDIOS = pg.locals.USEREVENT + 12
+ONSETS = pg.locals.USEREVENT + 13
+PITCHES = pg.locals.USEREVENT + 14
 
 
 class AudioRecord:
@@ -25,7 +28,41 @@ class AudioRecord:
         self.audio_going = True
         self.oneset_queue = Queue()
         self.audio_queue = Queue()
+        self.pitch_queue = Queue()
+
         self.callback = lambda audiodevice, stream: self.on_data(audiodevice, stream)
+
+    def update(self):
+        """ To be called in a pygame event loop.
+        """
+        audios = []
+        while not self.audio_queue.empty():
+            # print('-----audio from queue')
+            # print(time.time() - time_start)
+            audio = self.audio_queue.get()
+            audios.append(audio)
+
+        if audios:
+            pg.event.post(pg.event.Event(AUDIOS, audios=audios))
+
+        onsets = []
+        while not self.oneset_queue.empty():
+            onsets.append(self.oneset_queue.get())
+
+        if onsets:
+            pg.event.post(pg.event.Event(ONSETS, onsets=onsets))
+
+        pitches = []
+        while not self.pitch_queue.empty():
+            pitches.append(self.pitch_queue.get())
+
+        if pitches:
+            pg.event.post(pg.event.Event(PITCHES, pitches=pitches))
+
+
+
+
+
 
     def on_data(self, audiodevice, audiobuffer):
         self.audio_queue.put(bytes(audiobuffer))
@@ -41,6 +78,7 @@ class AudioRecord:
         if int(round(pitch)):
             confidence = self.pitch_o.get_confidence()
             # print("pitch, confidence", pitch, confidence, midi_to_ansi_note(pitch))
+            self.pitch_queue.put(pitch)
 
     def start(self):
         FORMAT = AUDIO_F32
