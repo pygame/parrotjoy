@@ -13,13 +13,9 @@ For making music, and visuals.
 python3 -m venv venv
 . ./venv/bin/activate
 pip install -r requirements.dev.txt
-python run_game.py
 
-# record sounds and play them back with the joypad
-python parrotjoy/looper.py
+parrotjoy
 
-# make noises and watch circles appear.
-python parrotjoy/videosynth.py
 ```
 
 ### Joypad controller instructions
@@ -63,6 +59,10 @@ This is useful if you record too much sound, or you want to line it up with othe
 - `t`, trim the END of the sound. Get MORE sound on RIGHT of sound.
 
 - `space`, adjust the BPM timer. Tap it in time until the BPM is as you like.
+
+
+- '0', use Looper scene.
+- '9', use VideySynth scene.
 
 
 
