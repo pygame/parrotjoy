@@ -12,19 +12,11 @@ import aubio
 import pygame as pg
 pygame = pg
 
-from metronome import Bpm, BpmCounter, BpmLight, BpmLine
-from videosynth import AudioRecord, DEVICENAME_OUTPUT, AUDIOS, ONSETS, PITCHES
-from draw_sound import draw_wave
-from camera_cv import VideoThread
-from tracks import Track
-
-
-DEVICENAME_INPUT = None
-DEVICENAME_OUTPUT = None
-#DEVICENAME_INPUT = b'Scarlett 2i4 USB'
-#DEVICENAME_OUTPUT = b'Scarlett 2i4 USB'
-#DEVICENAME_INPUT = b'Scarlett 2i4 USB, USB Audio'
-#DEVICENAME_OUTPUT = b'Scarlett 2i4 USB, USB Audio'
+from parrotjoy.metronome import Bpm, BpmCounter, BpmLight, BpmLine
+from parrotjoy.audiorecord import PITCHES, ONSETS, AUDIOS
+from parrotjoy.draw_sound import draw_wave
+from parrotjoy.camera_cv import VideoThread
+from parrotjoy.tracks import Track
 
 
 
@@ -63,14 +55,10 @@ TRIM_AMOUNT = 0.1
 class TrackRecorder:
     """ For recording, and playing back different tracks.
     """
-    def __init__(self):
+    def __init__(self, audio_thread):
 
-        # self.audio_thread = AudioThread()
-        # self.audio_thread.daemon = True
-        # self.audio_thread.start()
 
-        self.audio_thread = AudioRecord(inputdevice=DEVICENAME_INPUT)
-        self.audio_thread.start()
+        self.audio_thread = audio_thread
 
 
         # busy loop until we get some sound coming in.
@@ -158,7 +146,6 @@ class TrackRecorder:
         for track in self.tracks:
             track.update(None)
 
-        self.audio_thread.update()
         self.joys.events(events)
 
         for e in events:
@@ -411,88 +398,101 @@ class Gif:
         if self.start_saving:
             self.surfs.append(screen.copy())
 
-def main():
-
-    if pg.get_sdl_version()[0] == 2:
-        pg.mixer.pre_init(44100, 32, 2, 512, devicename=DEVICENAME_OUTPUT, allowedchanges=0)
-        # pg.mixer.pre_init(44100, 32, 2, 512, devicename='Scarlett 2i4 USB')
-        # pg.mixer.pre_init(44100, 32, 2, 512, devicename=None)
-        # pg.mixer.pre_init(44100, 32, 2, 512)
-
-    r = pg.init()
-    print(r)
-    screen = pg.display.set_mode((1024, 768))
-    # screen = pg.display.set_mode((1920, 1080))
-
-
-    # video_thread = VideoThread(1, 1920, 1080)
-    video_thread = VideoThread(1, 640, 480)
-    video_thread.daemon = True
-    video_thread.start()
 
 
 
 
-    joys = {}
-    for x in range(pg.joystick.get_count()):
-        j = pg.joystick.Joystick(x)
-        joys[x] = j
-        j.init()
+class Looper:
+    def __init__(self, app):
+        self.active = True
 
-    going = True
+        self.screen = app.screen
+        self._app = app
 
-    track_recorder = TrackRecorder()
+        # We loop quickly so timing can be more accurate with the sounds.
+        self.fps = 240
 
-    recording_lights = [
-        RecordingLight(track, idx)
-        for idx, track in enumerate(track_recorder.tracks)
-    ]
+        self.video_thread = VideoThread(1, 640, 480)
+        self.video_thread.daemon = True
+        self.video_thread.start()
 
-    recording_waves = [
-        RecordingWave(track, idx)
-        for idx, track in enumerate(track_recorder.tracks)
-    ]
 
-    bpm_counter = BpmCounter(track_recorder.bpm)
-    bpm_light = BpmLight(track_recorder.bpm)
-    bpm_line = BpmLine(track_recorder.bpm)
 
-    clock = pg.time.Clock()
+        track_recorder = TrackRecorder(app.audio_thread)
+        self.track_recorder = track_recorder
 
-    pygame_dir = os.path.split(os.path.abspath(pg.__file__))[0]
-    data_dir = os.path.join(pygame_dir, "examples", "data")
-    sound = pg.mixer.Sound(os.path.join(data_dir, "punch.wav"))
+        recording_lights = [
+            RecordingLight(track, idx)
+            for idx, track in enumerate(track_recorder.tracks)
+        ]
+        self.recording_lights = recording_lights
 
-    pg.display.set_caption('press space 4 times to adjust BPM timing')
+        recording_waves = [
+            RecordingWave(track, idx)
+            for idx, track in enumerate(track_recorder.tracks)
+        ]
+        self.recording_waves = recording_waves
 
-    background = pg.Surface(screen.get_size())
-    background = background.convert()
-    background.fill((0, 0, 0))
 
-    sprite_list = [bpm_counter, bpm_light, bpm_line] + recording_lights + recording_waves
-    allsprites = pg.sprite.LayeredDirty(
-        sprite_list,
-        _time_threshold=1000/10.0
-    )
-    allsprites.clear(screen, background)
+        bpm_counter = BpmCounter(track_recorder.bpm)
+        self.bpm_counter = bpm_counter
 
-    gif_saver = Gif()
+        bpm_light = BpmLight(track_recorder.bpm)
+        self.bpm_light = bpm_light
 
-    while going:
+        bpm_line = BpmLine(track_recorder.bpm)
+        self.bpm_line = bpm_line
+
+
+
+        pg.display.set_caption('press space 4 times to adjust BPM timing')
+        screen = app.screen
+
+        background = pg.Surface(screen.get_size())
+        background = background.convert()
+        background.fill((0, 0, 0))
+        self.background = background
+
+        sprite_list = [bpm_counter, bpm_light, bpm_line] + recording_lights + recording_waves
+        allsprites = pg.sprite.LayeredDirty(
+            sprite_list,
+            _time_threshold=1000/10.0
+        )
+        allsprites.clear(screen, background)
+        self.allsprites = allsprites
+
+
+    def redraw(self):
+        screen = self.screen
+        bpm_counter = self.bpm_counter
+        track_recorder = self.track_recorder
+        allsprites = self.allsprites
+        background = self.background
+
+        rects = []
+        rects.append(screen.blit(background, (0, 0)))
+        allsprites.clear(screen, background)
+        for spr in allsprites:
+            spr.dirty = 1
+        allsprites.draw(screen)
+        pg.display.update(rects)
+
+    def events(self, events):
         rects = []
 
-        events = pg.event.get()
+        screen = self.screen
+        bpm_counter = self.bpm_counter
+        track_recorder = self.track_recorder
+        allsprites = self.allsprites
+        video_thread = self.video_thread
+        background = self.background
+
         for e in events:
             if e.type == pg.QUIT or e.type == pg.KEYDOWN and e.key in [pg.K_ESCAPE, pg.K_q]:
                 going = False
 
             if e.type == pg.KEYDOWN and e.key in [pg.K_c]:
-                rects.append(screen.blit(background, (0, 0)))
-                allsprites.clear(screen, background)
-                for spr in allsprites:
-                    spr.dirty = 1
-                allsprites.draw(screen)
-                pg.display.update(rects)
+                self.redraw()
 
                 # allsprites.clear(screen, background)
                 video_thread.stop()
@@ -517,6 +517,29 @@ def main():
             track_recorder.play()
 
         bpm_counter.events(events)
+
+        self.rects = rects
+
+
+
+    def update(self, elapsed_time):
+        """ return True to let other scenes update. False to only us update.
+        """
+        pass
+
+    def render(self):
+        """ return rects.
+
+            If scene.propagate_render is True, the render will
+                continue to be propagated.
+        """
+        rects = self.rects
+        screen = self.screen
+        bpm_counter = self.bpm_counter
+        track_recorder = self.track_recorder
+        allsprites = self.allsprites
+        video_thread = self.video_thread
+        bpm_line = self.bpm_line
 
 
         # the line changes color depending on when we are recording.
@@ -547,21 +570,4 @@ def main():
                     video_y = 0
                 video_rect = screen.blit(surface, (video_x, video_y))
                 rects.append(video_rect)
-
-
-
-        # note, we don't update the display every 240 seconds.
-        if rects:
-            pg.display.update(rects)
-        gif_saver.update(events, screen)
-        # We loop quickly so timing can be more accurate with the sounds.
-        clock.tick(240)
-        # clock.tick(30)
-        # print(rects)
-        # print(clock.get_fps())
-
-    track_recorder.audio_thread.audio_going = False
-
-
-if __name__ == '__main__':
-    main()
+        return rects
