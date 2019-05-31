@@ -14,6 +14,7 @@ from tracks import Track
 from audiorecord import AudioRecord, PITCHES, ONSETS, AUDIOS
 from scenes.videosynth import VideoSynth
 from scenes.looper.looper import Looper
+from scenes.strawberries import Strawberries
 
 
 DEVICENAME_INPUT = None
@@ -25,6 +26,7 @@ DEVICENAME_OUTPUT = None
 
 class App:
     FLAGS = 0
+    FLAGS = pg.SCALED | pg.FULLSCREEN
     WIDTH = 1024
     HEIGHT = 768
     # FPS = 30
@@ -59,7 +61,9 @@ class App:
         self.videosynth = VideoSynth(self)
         self.videosynth.active = False
         self.looper = Looper(self)
-        self.scenes = [self.looper, self.videosynth]
+        self.strawberries = Strawberries(self)
+        self.strawberries.active = False
+        self.scenes = [self.looper, self.videosynth, self.strawberries]
 
         self.gifmaker = None
 
@@ -67,11 +71,20 @@ class App:
         self.looper.active = True
         self.looper.redraw()
         self.videosynth.active = False
+        self.strawberries.active = False
         self.FPS = 240
 
     def videosynth_active(self):
         self.looper.active = False
         self.videosynth.active = True
+        self.strawberries.active = False
+        self.FPS = 30
+
+
+    def strawberries_active(self):
+        self.looper.active = False
+        self.videosynth.active = False
+        self.strawberries.active = True
         self.FPS = 30
 
     def events(self, events):
@@ -84,6 +97,8 @@ class App:
                 self.looper_active()
             elif event.type == pg.KEYDOWN and event.key == pg.K_9:
                 self.videosynth_active()
+            elif event.type == pg.KEYDOWN and event.key == pg.K_8:
+                self.strawberries_active()
 
         if not self.running:
             return
