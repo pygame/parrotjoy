@@ -1,5 +1,7 @@
 import random, math, os, glob, string, time, pygame
 from pygame.locals import *
+pg = pygame
+from parrotjoy.audiorecord import PITCHES, ONSETS, AUDIOS
 
 #constants
 WINSIZE = [1920, 1080]
@@ -85,9 +87,17 @@ def move_stars(stars):
             vel[0] = vel[0] * 1.05
             vel[1] = vel[1] * 1.05
 
+def normalize(n, range1, range2):
+    delta1 = range1[1] - range1[0]
+    delta2 = range2[1] - range2[0]
+    return min((delta2 * (n - range1[0]) / delta1) + range2[0], range2[1])
 
+
+
+PAUSE_TIME = 0.2
 
 class Strawberries:
+
     def __init__(self, app):
         self.active = True
 
@@ -104,6 +114,9 @@ class Strawberries:
         self.ascii_lowercase = string.ascii_lowercase
 
         self.pause_on_letter = time.time()
+        self.random_pause = False
+
+        self.pause_time = PAUSE_TIME
 
 
 
@@ -111,6 +124,23 @@ class Strawberries:
         for e in events:
             if e.type == MOUSEBUTTONDOWN and e.button == 1:
                 WINCENTER[:] = list(e.pos)
+            if e.type == PITCHES:
+                y = normalize(e.frequencies[0], [50, 350], [0, 768])
+                WINCENTER[:] = [int(1024 / 2), y]
+                # print(y, e.frequencies[0])
+            if e.type == ONSETS:
+                if not self.random_pause:
+                    self.pause_on_letter = time.time()
+
+            if e.type == pg.KEYDOWN:
+                if e.key == pg.K_r:
+                    self.random_pause = not self.random_pause
+                    self.pause_time = PAUSE_TIME
+                if e.key == pg.K_e:
+                    self.pause_time += -0.02
+                if e.key == pg.K_t:
+                    self.pause_time += 0.02
+
 
 
     def update(self, elapsed_time):
@@ -136,19 +166,22 @@ class Strawberries:
         if not key in self.letters:
             return []
         screen.blit(self.letters[key], (x, 0))
+
+
+
         # print (pause_on_letter)
         if self.pause_on_letter:
             # print('yoooooop', pause_on_letter + 1.0, time.time())
-            if self.pause_on_letter + 0.7 < time.time():
+            if self.pause_on_letter + self.pause_time < time.time():
                 # print('finished')
                 self.pause_on_letter = 0
         else:
             self.letter_i += 1
             if self.letter_i >= len(self.ascii_lowercase):
                 self.letter_i = 0
-
-            if random.randint(0, 10) == 5:
-                self.pause_on_letter = time.time()
+            if self.random_pause:
+                if random.randint(0, 10) == 5:
+                    self.pause_on_letter = time.time()
 
         draw_stars(screen, self.stars, black)
         move_stars(self.stars)

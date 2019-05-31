@@ -25,8 +25,9 @@ DEVICENAME_OUTPUT = None
 
 
 class App:
-    FLAGS = 0
     FLAGS = pg.SCALED | pg.FULLSCREEN
+    FLAGS = pg.FULLSCREEN
+    FLAGS = 0
     WIDTH = 1024
     HEIGHT = 768
     # FPS = 30

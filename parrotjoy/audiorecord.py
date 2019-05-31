@@ -53,11 +53,18 @@ class AudioRecord:
             pg.event.post(pg.event.Event(ONSETS, onsets=onsets))
 
         pitches = []
+        notes = []
+        frequencies = []
         while not self.pitch_queue.empty():
-            pitches.append(self.pitch_queue.get())
+
+            # print("pitch, confidence", pitch, confidence, midi_to_ansi_note(pitch))
+            pitch = self.pitch_queue.get()
+            pitches.append(pitch)
+            notes.append(midi_to_ansi_note(pitch))
+            frequencies.append(midi_to_frequency(pitch))
 
         if pitches:
-            pg.event.post(pg.event.Event(PITCHES, pitches=pitches))
+            pg.event.post(pg.event.Event(PITCHES, pitches=pitches, notes=notes, frequencies=frequencies))
 
 
 
