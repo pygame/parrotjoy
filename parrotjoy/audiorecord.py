@@ -101,7 +101,7 @@ class AudioRecord:
                      for x in range(get_num_audio_devices(iscapture))]
         print(names)
         if self.inputdevice in justnames:
-            devicename = inputdevice
+            devicename = self.inputdevice
         else:
             devicename = justnames[0]
         print(f"Using: {devicename}")
