@@ -144,7 +144,8 @@ class BpmCounter(pg.sprite.DirtySprite):
         self.bpm = bpm
         self.last_bpm = self.bpm.bpm_average
 
-        self.font = pg.font.SysFont("Arial", 24)
+        # self.font = pg.font.SysFont("Arial", 24)
+        self.font = pg.font.Font(None, 24)
         self.render_image()
 
     def render_image(self):
