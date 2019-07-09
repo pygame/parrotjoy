@@ -76,7 +76,9 @@ class AudioRecord:
         #print(type(audiobuffer), len(audiobuffer))
         signal = np.frombuffer(audiobuffer, dtype=np.float32)
         # print(audiodevice)
-        if self.onset(signal):
+        onset = self.onset(signal)
+        if onset > 1:
+            # print("%f" % self.onset.get_last_s())
             self.oneset_queue.put(True)
 
 
