@@ -1,7 +1,9 @@
 
-# parrotjoy
+# parrotjoy - a pygame 2 project.
 
-For making music, and visuals.
+For making music, and visuals. [https://github.com/pygame/parrotjoy](https://github.com/pygame/parrotjoy)
+
+![parrot joy](docs/parrotjoy-logo.png?raw=true "parrotjoy")
 
 
 
@@ -63,7 +65,7 @@ This is useful if you record too much sound, or you want to line it up with othe
 
 - '0', use Looper scene.
 - '9', use VideySynth scene.
-
+- '8', strawberries.
 
 
 ### Running tests.
