@@ -17,7 +17,7 @@ from parrotjoy.audiorecord import PITCHES, ONSETS, AUDIOS
 from parrotjoy.draw_sound import draw_wave
 from parrotjoy.camera_cv import VideoThread
 from parrotjoy.tracks import Track
-
+from parrotjoy.resources import gfx
 
 
 class Joy:
@@ -351,6 +351,18 @@ class RecordingLight(pg.sprite.DirtySprite):
         # print (self.state, self.track.recording, self.track.add_to_mode)
 
 
+class Parrot(pg.sprite.DirtySprite):
+    """
+    """
+    def __init__(self):
+        pg.sprite.DirtySprite.__init__(self)
+        self.image = gfx('parrotjoy-logo.png')
+        self.rect = self.image.get_rect().copy()
+        self.rect.x = pg.display.get_surface().get_width() - self.rect.width
+        self.rect.y = 20
+        # self.dirty = 1
+
+
 class Gif:
     def __init__(self):
         self.path = '/tmp/'
@@ -399,8 +411,8 @@ class Gif:
             self.surfs.append(screen.copy())
 
 
-
-
+# CAMERA_RES = list(map(int, [640//1.3, 480//1.3]))
+CAMERA_RES = [480, 360]
 
 class Looper:
     def __init__(self, app):
@@ -412,7 +424,9 @@ class Looper:
         # We loop quickly so timing can be more accurate with the sounds.
         self.fps = 240
 
-        self.video_thread = VideoThread(1, 640, 480)
+        #TODO: FIXME: this camera id should be selectable.
+        camera_id = 0
+        self.video_thread = VideoThread(camera_id, CAMERA_RES[0], CAMERA_RES[1])
         self.video_thread.daemon = True
         self.video_thread.start()
 
@@ -444,6 +458,7 @@ class Looper:
         self.bpm_line = bpm_line
 
 
+        self.parrot = Parrot()
 
         pg.display.set_caption('press space 4 times to adjust BPM timing')
         screen = app.screen
@@ -453,7 +468,7 @@ class Looper:
         background.fill((0, 0, 0))
         self.background = background
 
-        sprite_list = [bpm_counter, bpm_light, bpm_line] + recording_lights + recording_waves
+        sprite_list = [bpm_counter, bpm_light, bpm_line] + recording_lights + recording_waves + [self.parrot]
         allsprites = pg.sprite.LayeredDirty(
             sprite_list,
             _time_threshold=1000/10.0
@@ -497,7 +512,7 @@ class Looper:
                 # allsprites.clear(screen, background)
                 video_thread.stop()
                 # video_thread = VideoThread(1, 1920, 1080)
-                video_thread = VideoThread(1, 640, 480)
+                video_thread = VideoThread(0, CAMERA_RES[0], CAMERA_RES[1])
                 video_thread.daemon = True
                 video_thread.start()
             if e.type == pg.KEYDOWN and e.key in [pg.K_v]:
@@ -505,7 +520,7 @@ class Looper:
                 allsprites.clear(screen, background)
                 video_thread.stop()
                 # video_thread = VideoThread(1, 1920, 1080)
-                video_thread = VideoThread(1, 640, 480)
+                video_thread = VideoThread(0, CAMERA_RES[0], CAMERA_RES[1])
                 video_thread.daemon = True
                 video_thread.start()
 
@@ -562,9 +577,9 @@ class Looper:
         while not video_thread.queue.empty():
             surface = video_thread.queue.get()
             if surface:
-                if video_thread.width == 640:
-                    video_x = screen.get_width() - 640
-                    video_y = screen.get_height() - 480
+                if video_thread.width == CAMERA_RES[0]:
+                    video_x = screen.get_width() - CAMERA_RES[0]
+                    video_y = (screen.get_height() - CAMERA_RES[1]) - 25
                 else:
                     video_x = 0
                     video_y = 0

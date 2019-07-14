@@ -98,6 +98,8 @@ class VideoSynth:
                     ))
 
             elif event.type == ONSETS:
+                # for onset in event.onsets:
+                #     print("onset", onset)
                 if self.blend == 2:
                     for onset in event.onsets:
                         self.visuals.append(Visual(
