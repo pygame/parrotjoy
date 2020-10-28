@@ -1,3 +1,3 @@
 if __name__ == '__main__':
     import parrotjoy.cli
-    parrotjoy.cli.main()
+    parrotjoy.cli.cli_main()

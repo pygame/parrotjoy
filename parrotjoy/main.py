@@ -1,20 +1,13 @@
-import sys
-import io
-import random
-import math
+"""Main loop and entry point.
+"""
 import time
 
-
-import numpy as np
 import pygame as pg
-pygame = pg
-from pygame.midi import frequency_to_midi, midi_to_frequency, midi_to_ansi_note
 
-from tracks import Track
-from audiorecord import AudioRecord, PITCHES, ONSETS, AUDIOS
-from scenes.videosynth import VideoSynth
-from scenes.looper.looper import Looper
-from scenes.strawberries import Strawberries
+from .audiorecord import AudioRecord
+from .scenes.looper.looper import Looper
+from .scenes.strawberries import Strawberries
+from .scenes.videosynth import VideoSynth
 
 
 DEVICENAME_INPUT = None
@@ -23,158 +16,132 @@ DEVICENAME_OUTPUT = None
 # DEVICENAME_OUTPUT = b'Scarlett 2i4 USB'
 
 
-
 class App:
-    FLAGS = pg.FULLSCREEN
-    FLAGS = 0
-    FLAGS = pg.SCALED | pg.FULLSCREEN
-    WIDTH = 1024
-    HEIGHT = 768
-    # FPS = 30
-    FPS = 240
+    """App class, initializes and then coordinates all the scenes."""
 
+    # flags = pg.FULLSCREEN
+    flags = 0
+    # flags = pg.SCALED | pg.FULLSCREEN
+    width = 1024
+    height = 768
+    # fps = 30
+    fps = 240
 
-    def __init__(self):
+    def __init__(self, argv):
+        self.argv = argv
 
-
-        #pg.mixer.pre_init(44100, 32, 2, 1024, devicename=DEVICENAME_OUTPUT)
-        pg.mixer.pre_init(44100, 32, 2, 1024, devicename=DEVICENAME_OUTPUT, allowedchanges=0)
+        # pg.mixer.pre_init(44100, 32, 2, 1024, devicename=DEVICENAME_OUTPUT)
+        pg.mixer.pre_init(
+            44100, 32, 2, 1024, devicename=DEVICENAME_OUTPUT, allowedchanges=0
+        )
         pg.init()
         pg.font.init()
-
 
         self.audio_thread = AudioRecord(inputdevice=DEVICENAME_INPUT)
         self.audio_thread.start()
 
-
         joys = {}
-        for x in range(pg.joystick.get_count()):
-            j = pg.joystick.Joystick(x)
-            joys[x] = j
+        for joy_id in range(pg.joystick.get_count()):
+            j = pg.joystick.Joystick(joy_id)
+            joys[joy_id] = j
             j.init()
 
-
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT), self.FLAGS)
-        self.clock = pygame.time.Clock()
+        self.screen = pg.display.set_mode((self.width, self.height), self.flags)
+        self.clock = pg.time.Clock()
 
         self.running = True
 
-        self.videosynth = VideoSynth(self)
-        self.videosynth.active = False
-        self.looper = Looper(self)
-        self.strawberries = Strawberries(self)
-        self.strawberries.active = False
-        self.scenes = [self.looper, self.videosynth, self.strawberries]
+        self.scenes = {
+            "videosynth": VideoSynth(self),
+            "strawberries": Strawberries(self),
+            "looper": Looper(self),
+        }
+        self.scenes["videosynth"].active = False
+        self.scenes["strawberries"].active = False
 
-        self.gifmaker = None
-
-    def looper_active(self):
-        self.looper.active = True
-        self.looper.redraw()
-        self.videosynth.active = False
-        self.strawberries.active = False
-        self.FPS = 240
-
-    def videosynth_active(self):
-        self.looper.active = False
-        self.videosynth.active = True
-        self.strawberries.active = False
-        self.FPS = 30
-
-
-    def strawberries_active(self):
-        self.looper.active = False
-        self.videosynth.active = False
-        self.strawberries.active = True
-        self.FPS = 30
+    def activate_scene(self, scene, fps=30):
+        """Activate the given scene."""
+        for scn in self.scenes.values():
+            scn.active = False
+        scene.active = True
+        self.fps = fps
+        if hasattr(scene, "redraw"):
+            scene.redraw()
 
     def events(self, events):
-        """
-        """
+        """Process all the events, pass the events down to the scenes."""
         for event in events:
-            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key in [pg.K_ESCAPE, pg.K_q]:
+            if (
+                event.type == pg.QUIT
+                or event.type == pg.KEYDOWN
+                and event.key in [pg.K_ESCAPE, pg.K_q]
+            ):
                 self.running = False
             if event.type == pg.KEYDOWN and event.key == pg.K_0:
-                self.looper_active()
+                self.activate_scene(self.scenes["looper"], fps=240)
             elif event.type == pg.KEYDOWN and event.key == pg.K_9:
-                self.videosynth_active()
+                self.activate_scene(self.scenes["videosynth"])
             elif event.type == pg.KEYDOWN and event.key == pg.K_8:
-                self.strawberries_active()
+                self.activate_scene(self.scenes["strawberries"])
 
         if not self.running:
             return
         # print(self.scenes[::-1], events)
-        for scene in self.scenes[::-1]:
+        for scene in list(self.scenes.values())[::-1]:
             if scene.active:
                 scene.events(events)
 
     def update(self, elapsed_time):
-        """ update all the scenes until one returns False.
-        """
+        """Update all the scenes until one returns False."""
         self.audio_thread.update()
 
-        for scene in self.scenes[::-1]:
+        for scene in list(self.scenes.values())[::-1]:
             if scene.active:
                 if not scene.update(elapsed_time):
                     break
 
-        self.clock.tick(self.FPS)
+        self.clock.tick(self.fps)
 
     def render(self):
-        """ Render the highest active scene.
+        """Render the highest active scene.
 
         If scene.propagate_render is True, the render will
             continue to be propagated.
         """
 
         all_rects = []
-        for scene in self.scenes[::-1]:
+        for scene in list(self.scenes.values())[::-1]:
             if scene.active:
                 rects = scene.render()
                 if rects is not None:
                     all_rects.extend(rects)
-                if not getattr(scene, 'propagate_render', False):
+                if not getattr(scene, "propagate_render", False):
                     break
         # print(all_rects)
-        pygame.display.update(all_rects)
-
+        pg.display.update(all_rects)
 
     def main(self):
-        """
-        """
+        """Our mainloop."""
 
         elapsed_time = 0
         while self.running:
-            fs = time.time()
-            self.events(pygame.event.get())
+            start_time = time.time()
+            self.events(pg.event.get())
             self.update(elapsed_time)
             self.render()
-            elapsed_time = (time.time() - fs) * 1000
-            if self.gifmaker is not None:
-                self.gifmaker.update(events, self.screen)
+            elapsed_time = (time.time() - start_time) * 1000
 
         self.audio_thread.audio_going = False
 
-        pygame.quit()
+        pg.quit()
 
 
+def main(argv):
+    """Main loop."""
+    App(argv).main()
 
 
+if __name__ == "__main__":
+    import sys
 
-def main(args):
-    try:
-        gamemain(args)
-    except KeyboardInterrupt:
-        print('Keyboard Interrupt...')
-        print('Exiting')
-
-def gamemain(args):
-
-    app = App()
-    app.main()
-
-
-
-
-if __name__ == '__main__':
     main(sys.argv)

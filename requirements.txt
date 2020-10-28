@@ -1,5 +1,7 @@
-pygame==2.0.0.dev1
+pygame
 numpy
 aubio
-opencv-python; sys_platform == 'darwin'
-opencv-python; sys_platform == 'win32'
+#opencv-python; sys_platform == 'darwin'
+#opencv-python; sys_platform == 'win32'
+opencv-python
+scipy

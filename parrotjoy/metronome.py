@@ -7,12 +7,16 @@ Press space until the BPM gets to what you want.
 """
 import time
 import os
+from typing import List
+
 import pygame as pg
 
+# pylint: disable=too-many-instance-attributes
 
-def average_bpm(times):
-    """ For the list of times(seconds since epoch) return
-        the average beats per minute.
+
+def average_bpm(times: List[float]) -> float:
+    """For the list of times(seconds since epoch) return
+    the average beats per minute.
     """
     spaces = []
     previous = times[0]
@@ -24,30 +28,25 @@ def average_bpm(times):
 
 
 class Bpm:
-    """ Beats Per Minute.
+    """Beats Per Minute.
 
     By press()ing this, the bpm counter will change.
     """
 
-    def __init__(self):
-
-        self.init()
-
-    def init(self, bpm=70, space_between_beats=60/70):
+    def __init__(self, bpm: int = 70, space_between_beats: float = 60 / 70):
         # now = time.time()
         # start the elapsed time after a chunk of sound has arrived.
-        now = time.time() - (1.0 / (44100 / 512.))
+        now = time.time() - (1.0 / (44100 / 512.0))
         self.space_between_beats = space_between_beats
-        self.last_press = now
+        self.last_press: float = now
         """ The time since epoch of the last press.
         """
-        self.bpm = bpm
-        self.bpm_average = bpm
+        self.bpm: int = bpm
+        self.bpm_average: int = bpm
         """ The average bpm from the last 4 presses.
         """
 
-        self.times = []
-
+        self.times: List[float] = []
 
         self._elapsed_time = 0.0
         self._last_update = now
@@ -55,32 +54,32 @@ class Bpm:
         self._last_closeness = 1.0
         self._last_start = 1
 
-        self.on_beat = 0
-        """ The time since the epoch when the last beat happened.
-        """
+        self.on_beat: int | float = 0
+        """ The time since the epoch when the last beat happened. """
 
-        self.beat_num = 0
-        """ accumlative counter of beats.
-        """
+        self.beat_num: int = 0
+        """ Accumulative counter of beats. """
 
-        self.finished_beat = 0
-        """ True for one tick, when 0.1 seconds has passed since the beat.
-        """
+        self.finished_beat: bool = False
+        """ True for one tick, when 0.1 seconds has passed since the beat. """
 
-        self.first_beat = 0
-        """ True if we are the first beat on a bar (out of 4).
-        """
+        self.first_beat: bool = False
+        """ True if we are the first beat on a bar (out of 4). """
 
-        self.started_beat = 0
-        """ This is true only on the tick
-        """
+        self.started_beat: bool = False
+        """ This is true only on the tick. """
+
+    def init(self, bpm: int = 70, space_between_beats: float = 60 / 70):
+        """Initialize state again."""
+        # pylint: disable=unnecessary-dunder-call
+        self.__init__(bpm, space_between_beats) # type: ignore
 
     def start_at_beginning(self):
+        """Initialize state, at beginning."""
         self.init(self.bpm_average, self.space_between_beats)
 
     def press(self):
-        """ For when someone is trying to update the timer.
-        """
+        """For when someone is trying to update the timer."""
         press_time = time.time()
         self.space_between_beats = press_time - self.last_press
         self.last_press = press_time
@@ -94,21 +93,51 @@ class Bpm:
             self.bpm_average = self.bpm
 
     def get_space_between(self):
+        """Between the onsets."""
         return 60.0 / self.bpm_average
+
     def get_time_for_loop(self):
+        """We have 4 beats in a loop."""
         return 4 * self.get_space_between()
+
     def time_since_start(self, mod=0):
+        """Since start of loop.
+
+        :param mod: added to the elapsed time since the start.
+        """
         return (self._elapsed_time + mod) % (self.get_time_for_loop())
 
-    def update(self):
-        # print('bpm: update')
-        the_time = time.time()
-        self._elapsed_time += the_time - self._last_update
-        self._last_update = the_time
+    def do_next_beat(self, now):
+        """We have reached the next beat."""
+        self.on_beat = now
+        self.finished_beat = False
+        self.beat_num += 1
+        self.started_beat = True
+        # self.first_beat = not (self.beat_num % 4)
+        time_since_start = self.time_since_start()
+        if time_since_start < self._last_start:
+            self.first_beat = True
+        else:
+            self.first_beat = False
+        self._last_start = time_since_start
+        # print(
+        #     "-----1--- self.first_beat",
+        #     self.first_beat,
+        #     self.started_beat,
+        #     closeness,
+        #     self.beat_num,
+        #     self.time_since_start(),
+        # )
 
+    def update(self):
+        """Called every tick/loop."""
+        # print('bpm: update')
+        now = time.time()
+        self._elapsed_time += now - self._last_update
+        self._last_update = now
 
         # if _elapsed_time 'close' to bpm show light.
-        since_last_beat = the_time - self.on_beat
+        since_last_beat = now - self.on_beat
 
         self.finished_beat = self.on_beat and (since_last_beat > 0.1)
         if self.finished_beat:
@@ -116,48 +145,39 @@ class Bpm:
 
         closeness = self._elapsed_time % self.get_space_between()
         if closeness < self._last_closeness:
-            self.on_beat = the_time
-            self.finished_beat = 0
-            self.dirty = 1
-            self.beat_num += 1
-            self.started_beat = 1
-            # self.first_beat = not (self.beat_num % 4)
-            time_since_start = self.time_since_start()
-            if time_since_start < self._last_start:
-                self.first_beat = True
-            else:
-                self.first_beat = False
-            self._last_start = time_since_start
-            # print("-----1--- self.first_beat", self.first_beat, self.started_beat, closeness, self.beat_num, self.time_since_start())
+            self.do_next_beat(now)
         else:
             # print("self.started_beat = 0")
-            self.started_beat = 0
+            self.started_beat = False
 
         self._last_closeness = closeness
 
 
 class BpmCounter(pg.sprite.DirtySprite):
-    """ For showing a text representing what the Beats Per Minute is.
-    """
+    """For showing a text representing what the Beats Per Minute is."""
+
     def __init__(self, bpm):
         pg.sprite.DirtySprite.__init__(self)
+        self.dirty = 1
         self.bpm = bpm
         self.last_bpm = self.bpm.bpm_average
 
         # self.font = pg.font.SysFont("Arial", 24)
         self.font = pg.font.Font(None, 24)
+        self.image = None
+        self.rect = None
         self.render_image()
 
     def render_image(self):
         self.image = self.font.render(
-            "%s" % int(self.bpm.bpm_average), True, (255, 255, 255)
+            f"{int(self.bpm.bpm_average)}", True, (255, 255, 255)
         )
         self.rect = self.image.get_rect()
 
     def press(self):
         self.bpm.press()
         self.image = self.font.render(
-            "%s" % int(self.bpm.bpm_average), True, (255, 255, 255)
+            f"{int(self.bpm.bpm_average)}", True, (255, 255, 255)
         )
         self.rect = self.image.get_rect()
         self.dirty = 1
@@ -176,10 +196,11 @@ class BpmCounter(pg.sprite.DirtySprite):
 
 
 class BpmLight(pg.sprite.DirtySprite):
-    """ Shows a red 'light' representing each beat.
-    """
+    """Shows a red 'light' representing each beat."""
+
     def __init__(self, bpm):
         pg.sprite.DirtySprite.__init__(self)
+        self.dirty = 1
         self.bpm = bpm
 
         self.image = pg.Surface((20, 20))
@@ -188,6 +209,7 @@ class BpmLight(pg.sprite.DirtySprite):
         self.rect.x = 50
         self.rect.y = 5
         self.last_bpm = self.bpm.bpm_average
+        self.elapsed_time = 0.0
 
     def press(self):
         self.image.fill((255, 0, 0))
@@ -207,12 +229,11 @@ class BpmLight(pg.sprite.DirtySprite):
         self.last_bpm = self.bpm.bpm_average
 
 
-
-
 class BpmLine(pg.sprite.DirtySprite):
-    """ Shows a line of where we are up to in a loop.
-    """
+    """Shows a line of where we are up to in a loop."""
+
     def __init__(self, bpm):
+        self.dirty = 1
         self._layer = 1
         pg.sprite.DirtySprite.__init__(self)
         self.bpm = bpm
@@ -224,7 +245,6 @@ class BpmLine(pg.sprite.DirtySprite):
         self.color = self.not_recording_color
         self.last_color = self.color
 
-
         self.render_image()
         self.last_bpm = self.bpm.bpm_average
 
@@ -233,10 +253,12 @@ class BpmLine(pg.sprite.DirtySprite):
         width_pixels = 320
         width_in_seconds = 5
         print("self.bpm.get_time_for_loop()", self.bpm.get_time_for_loop())
-        self.loop_width = (width_pixels / width_in_seconds) * self.bpm.get_time_for_loop()
+        self.loop_width = (
+            width_pixels / width_in_seconds
+        ) * self.bpm.get_time_for_loop()
 
         # self.image_height = 130
-        num_tracks_high = 4
+        # num_tracks_high = 4
         # self.image_height = 70 + (130 * num_tracks_high)
         self.image_height = 70 + (130 * 1)
 
@@ -258,16 +280,13 @@ class BpmLine(pg.sprite.DirtySprite):
         self.last_bpm = self.bpm.bpm_average
         self.last_color = self.color
 
-
         elapsed_time = self.bpm.time_since_start(0.0)
         loop_length = self.bpm.get_time_for_loop()
         # print("loop_length", loop_length)
         where_line = (self.loop_width / loop_length) * elapsed_time
         self.rect.x = self.x_start + where_line
 
-
         self.dirty = 1
-
 
 
 def main():
@@ -288,7 +307,7 @@ def main():
     data_dir = os.path.join(pygame_dir, "examples", "data")
     sound = pg.mixer.Sound(os.path.join(data_dir, "punch.wav"))
 
-    pg.display.set_caption('press space 4 times to adjust BPM timing')
+    pg.display.set_caption("press space 4 times to adjust BPM timing")
 
     background = pg.Surface(screen.get_size())
     background = background.convert()
@@ -301,7 +320,11 @@ def main():
         events = pg.event.get()
         for e in events:
             print(e)
-            if e.type == pg.QUIT or e.type == pg.KEYDOWN and e.key in [pg.K_ESCAPE, pg.K_q]:
+            if (
+                e.type == pg.QUIT
+                or e.type == pg.KEYDOWN
+                and e.key in [pg.K_ESCAPE, pg.K_q]
+            ):
                 going = False
 
         bpm.update()
@@ -323,5 +346,6 @@ def main():
         # print(rects)
         # print(clock.get_fps())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

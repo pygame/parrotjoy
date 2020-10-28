@@ -1,13 +1,19 @@
-import random, math, os, glob, string, time, pygame
-from pygame.locals import *
-pg = pygame
-from parrotjoy.audiorecord import PITCHES, ONSETS, AUDIOS
+import random
+import math
+import os
+import glob
+import string
+import time
 
-#constants
+import pygame as pg
+
+from ..audiorecord import PITCHES, ONSETS
+
+# constants
 WINSIZE = [1920, 1080]
 WINSIZE = [2048, 1280]
 WINSIZE = [640, 480]
-WINSIZE = [2448/2, 2448/2]
+WINSIZE = [2448 // 2, 2448 // 2]
 WINSIZE = [1000, 1000]
 WINCENTER = [320, 240]
 
@@ -16,54 +22,49 @@ WINCENTER = [int(1024 / 2), int(768 / 2)]
 NUMSTARS = 150
 
 
-
-def load_letters(extra_sizes = [(100, 100), (768, 768)]):
-    letter_path = os.path.join('data', 'images', 'letters')
-    # fnames = glob.glob(os.path.join(letter_path, '*.png'))
-    # image_paths = {os.path.split(f)[1].split('.png')[0]: f for f in fnames}
-    fnames = glob.glob(os.path.join(letter_path, '*.jpg'))
-    image_paths = {os.path.split(f)[1].split('.jpg')[0]: f for f in fnames}
+def load_letters(extra_sizes=None):
+    if extra_sizes is None:
+        extra_sizes = [(100, 100), (768, 768)]
+    letter_path = os.path.join("data", "images", "letters")
+    fnames = glob.glob(os.path.join(letter_path, "*.jpg"))
+    image_paths = {os.path.split(f)[1].split(".jpg")[0]: f for f in fnames}
 
     images = {}
 
     def load_image(letter):
-        surf = pygame.image.load(image_paths[letter])
+        surf = pg.image.load(image_paths[letter])
         images[letter] = surf.convert()
         for x, y in extra_sizes:
-            images[letter + '%sx%s' % (x, y)] = pygame.transform.smoothscale(surf, (x, y)).convert()
+            images[f"{letter}{x}x{y}"] = pg.transform.smoothscale(
+                surf, (x, y)
+            ).convert()
 
-    # def load_image(letter):
-    #     surf = pygame.image.load(image_paths[letter])
-    #     if surf.get_size() != (2448, 2448):
-    #         surf = pygame.transform.smoothscale(surf, (2448, 2448))
-    #     images[letter] = surf.convert()
-    #     for x, y in extra_sizes:
-    #         images[letter + '%sx%s' % (x, y)] = pygame.transform.smoothscale(surf, (x, y)).convert()
-
-    pygame.threads.tmap(load_image, image_paths)
+    pg.threads.tmap(load_image, image_paths)
     return images
-
 
 
 def init_star():
     "creates new star values"
-    dir = random.randrange(100000)
-    velmult = random.random()*.6+.4
-    vel = [math.sin(dir) * velmult, math.cos(dir) * velmult]
+    direction = random.randrange(100000)
+    velocity_multiplier = random.random() * 0.6 + 0.4
+    vel = [
+        math.sin(direction) * velocity_multiplier,
+        math.cos(direction) * velocity_multiplier,
+    ]
     return vel, WINCENTER[:]
 
 
 def initialize_stars():
     "creates a new starfield"
     stars = []
-    for x in range(NUMSTARS):
+    for _ in range(NUMSTARS):
         star = init_star()
         vel, pos = star
         steps = random.randint(0, WINCENTER[0])
         pos[0] = pos[0] + (vel[0] * steps)
         pos[1] = pos[1] + (vel[1] * steps)
-        vel[0] = vel[0] * (steps * .09)
-        vel[1] = vel[1] * (steps * .09)
+        vel[0] = vel[0] * (steps * 0.09)
+        vel[1] = vel[1] * (steps * 0.09)
         stars.append(star)
     move_stars(stars)
     return stars
@@ -71,7 +72,7 @@ def initialize_stars():
 
 def draw_stars(surface, stars, color):
     "used to draw (and clear) the stars"
-    for vel, pos in stars:
+    for _, pos in stars:
         pos = (int(pos[0]), int(pos[1]))
         surface.set_at(pos, color)
 
@@ -87,27 +88,25 @@ def move_stars(stars):
             vel[0] = vel[0] * 1.05
             vel[1] = vel[1] * 1.05
 
+
 def normalize(n, range1, range2):
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
     return min((delta2 * (n - range1[0]) / delta1) + range2[0], range2[1])
 
 
-
 PAUSE_TIME = 0.2
 
-class Strawberries:
 
+class Strawberries:
     def __init__(self, app):
         self.active = True
 
         self.screen = app.screen
         self._app = app
 
-
         random.seed()
         self.stars = initialize_stars()
-
 
         self.letters = load_letters()
         self.letter_i = 0
@@ -118,11 +117,9 @@ class Strawberries:
 
         self.pause_time = PAUSE_TIME
 
-
-
     def events(self, events):
         for e in events:
-            if e.type == MOUSEBUTTONDOWN and e.button == 1:
+            if e.type == pg.MOUSEBUTTONDOWN and e.button == 1:
                 WINCENTER[:] = list(e.pos)
             if e.type == PITCHES:
                 y = normalize(e.frequencies[0], [50, 350], [0, 768])
@@ -141,18 +138,14 @@ class Strawberries:
                 if e.key == pg.K_t:
                     self.pause_time += 0.02
 
-
-
     def update(self, elapsed_time):
-        """ return True to let other scenes update. False to only us update.
-        """
-        pass
+        """return True to let other scenes update. False to only us update."""
 
     def render(self):
-        """ return rects.
+        """return rects.
 
-            If scene.propagate_render is True, the render will
-                continue to be propagated.
+        If scene.propagate_render is True, the render will
+            continue to be propagated.
         """
         screen = self.screen
 
@@ -162,12 +155,10 @@ class Strawberries:
         screen.fill(black)
 
         x = int((1024 - 768) // 2)
-        key = self.ascii_lowercase[self.letter_i] + '768x768'
-        if not key in self.letters:
+        key = self.ascii_lowercase[self.letter_i] + "768x768"
+        if key not in self.letters:
             return []
         screen.blit(self.letters[key], (x, 0))
-
-
 
         # print (pause_on_letter)
         if self.pause_on_letter:

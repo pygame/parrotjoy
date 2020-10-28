@@ -6,12 +6,12 @@ class Scene:
         self._app = app
 
     def events(self, events):
-        pass
+        """Events for us to process.
+        """
 
-    def update(self, elapsed_time):
+    def update(self, elapsed_time: float):
         """ return True to let other scenes update. False to only us update.
         """
-        pass
 
     def render(self):
         """ return rects.
@@ -19,4 +19,3 @@ class Scene:
             If scene.propagate_render is True, the render will
                 continue to be propagated.
         """
-        pass

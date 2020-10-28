@@ -1,0 +1,54 @@
+# Publish to github releases on push to tag.
+
+name: Publish to github releases
+# Go to repo settings and set up GITHUB_TOKEN
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  publish:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: dist/*
+            asset_name: parrotjoy-src
+            build_cmd: sdist
+            ls_cmd: ls -laR
+          - os: windows-latest
+            artifact_name: dist/*.msi
+            asset_name: parrotjoy-windows-amd64
+            build_cmd: bdist_msi
+            ls_cmd: dir /s
+          - os: macos-latest
+            artifact_name: build/*.dmg
+            asset_name: parrotjoy-macos-amd64
+            build_cmd: bdist_dmg
+            ls_cmd: ls -laR
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          python -m pip install -r requirements.dev.txt
+      - name: Build binary
+        run: |
+          python setup.py ${{ matrix.build_cmd }}
+          ${{ matrix.ls_cmd }}
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
